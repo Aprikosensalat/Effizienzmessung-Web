@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Effizienzmessung</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Effizienzmessung DC/DC-Wandler</h1>
+    <span id="runBadge" class="status off">bereit</span>
+  </header>
+
+  <p id="unsupported" class="banner" hidden>
+    Dieser Browser unterstützt weder die Web Serial API noch WebUSB. Bitte Chrome oder Edge verwenden
+    (Desktop oder Android) und die Seite über <code>http://localhost</code> oder <code>https://</code> öffnen.
+    Der Simulator funktioniert trotzdem.
+  </p>
+
+  <main>
+    <!-- Geräte -->
+    <section class="devices">
+      <div class="card dev" id="devSource">
+        <div class="card-head"><h2>Quelle (Eingang)</h2><span class="status off" data-f="state">getrennt</span></div>
+        <div class="row">
+          <label>Gerät <select data-f="model"></select></label>
+          <label data-f="chWrap">Kanal <select data-f="channel"></select></label>
+        </div>
+        <div class="row">
+          <label data-f="transWrap">Schnittstelle
+            <select data-f="transport">
+              <option value="serial">Seriell (Web Serial)</option>
+              <option value="usb">USB direkt (WebUSB, Android)</option>
+            </select>
+          </label>
+          <label data-f="baudWrap">Baudrate <select data-f="baud"></select></label>
+          <button class="primary" data-f="connect">Verbinden</button>
+        </div>
+        <p class="muted small" data-f="idn">—</p>
+        <p class="muted small" data-f="note" hidden></p>
+        <div class="row">
+          <label class="check"><input type="checkbox" data-f="sense" disabled> Remote Sense</label>
+          <span class="muted small" data-f="senseHint"></span>
+        </div>
+        <p class="muted small" data-f="limits"></p>
+      </div>
+
+      <div class="card dev" id="devSink">
+        <div class="card-head"><h2>Senke (Ausgang)</h2><span class="status off" data-f="state">getrennt</span></div>
+        <div class="row">
+          <label>Gerät <select data-f="model"></select></label>
+          <label data-f="chWrap">Kanal <select data-f="channel"></select></label>
+        </div>
+        <div class="row">
+          <label data-f="transWrap">Schnittstelle
+            <select data-f="transport">
+              <option value="serial">Seriell (Web Serial)</option>
+              <option value="usb">USB direkt (WebUSB, Android)</option>
+            </select>
+          </label>
+          <label data-f="baudWrap">Baudrate <select data-f="baud"></select></label>
+          <button class="primary" data-f="connect">Verbinden</button>
+        </div>
+        <p class="muted small" data-f="idn">—</p>
+        <p class="muted small" data-f="note" hidden></p>
+        <div class="row">
+          <label class="check"><input type="checkbox" data-f="sense" disabled> Remote Sense</label>
+          <span class="muted small" data-f="senseHint"></span>
+        </div>
+        <p class="muted small" data-f="limits"></p>
+      </div>
+    </section>
+
+    <!-- Live-Werte -->
+    <section class="meters eff-meters">
+      <div class="card meter"><span class="label">Vin</span><span class="value"><span id="mVin">—</span> <small>V</small></span></div>
+      <div class="card meter"><span class="label">Iin</span><span class="value"><span id="mIin">—</span> <small>A</small></span></div>
+      <div class="card meter"><span class="label">Pin</span><span class="value"><span id="mPin">—</span> <small>W</small></span></div>
+      <div class="card meter"><span class="label">Vout</span><span class="value"><span id="mVout">—</span> <small>V</small></span></div>
+      <div class="card meter"><span class="label">Iout</span><span class="value"><span id="mIout">—</span> <small>A</small></span></div>
+      <div class="card meter"><span class="label">Pout</span><span class="value"><span id="mPout">—</span> <small>W</small></span></div>
+      <div class="card meter eta"><span class="label">Wirkungsgrad η</span><span class="value"><span id="mEta">—</span> <small>%</small></span></div>
+    </section>
+
+    <!-- Aufforderung -->
+    <section class="card prompt" id="promptCard" hidden>
+      <h2>Ausgangsspannung einstellen</h2>
+      <p>Bitte die Ausgangsspannung des Wandlers auf <b id="promptV">—</b> einstellen
+        (Vin = <span id="promptVin">—</span>) und dann übernehmen.</p>
+      <p class="prompt-live"><span id="promptVout">—</span> V <small id="promptDiff"></small></p>
+      <div class="row">
+        <button class="primary" id="btnPromptOk">Übernehmen</button>
+        <button id="btnPromptCancel">Messung abbrechen</button>
+      </div>
+    </section>
+
+    <!-- Verlauf -->
+    <section class="card">
+      <div class="card-head">
+        <h2>Verlauf</h2>
+        <div class="row tight">
+          <label class="check"><input type="checkbox" data-series="pin" checked> Pin</label>
+          <label class="check"><input type="checkbox" data-series="pout" checked> Pout</label>
+          <label class="check"><input type="checkbox" data-series="eta" checked> η</label>
+          <label class="check"><input type="checkbox" data-series="vin"> Vin</label>
+          <label class="check"><input type="checkbox" data-series="vout"> Vout</label>
+          <select id="window" aria-label="Zeitfenster">
+            <option value="60000">1 min</option>
+            <option value="300000" selected>5 min</option>
+            <option value="900000">15 min</option>
+            <option value="3600000">1 h</option>
+            <option value="0">alles</option>
+          </select>
+        </div>
+      </div>
+      <canvas id="plot"></canvas>
+    </section>
+
+    <!-- Handsteuerung -->
+    <section class="card">
+      <h2>Handsteuerung</h2>
+      <div class="row">
+        <label>Vin (V) <input id="manVin" type="number" min="0" step="0.01" value="12"></label>
+        <label>Strombegrenzung (A) <input id="manIlim" type="number" min="0" step="0.01" value="1"></label>
+        <button id="btnManSrcSet" disabled>Übernehmen</button>
+        <button id="btnManSrcOn" class="input-btn" disabled>Quelle EIN</button>
+      </div>
+      <div class="row">
+        <label>Iout (A) <input id="manIout" type="number" min="0" step="0.001" value="0.1"></label>
+        <button id="btnManSinkSet" disabled>Übernehmen</button>
+        <button id="btnManSinkOn" class="input-btn" disabled>Last EIN</button>
+        <button id="btnAllOff" class="danger-btn">Alles AUS</button>
+      </div>
+      <p class="muted small">„Alles AUS“ schaltet zuerst die Last, dann die Quelle ab. Während einer Messung ist die Handsteuerung gesperrt.</p>
+    </section>
+
+    <!-- Messplan -->
+    <section class="card" id="planCard">
+      <div class="card-head">
+        <h2>Messplan</h2>
+        <span id="planInfo" class="muted small"></span>
+      </div>
+      <div class="row">
+        <label>Wandler / Bezeichnung <input id="pDut" type="text" class="wide" placeholder="z. B. LM2596 Modul"></label>
+        <label>Ausgangsspannungen (V)
+          <input id="pVouts" type="text" class="wide" placeholder="leer = keine Aufforderung, z. B. 3,3; 5; 12">
+        </label>
+      </div>
+
+      <h3>Eingangsspannungen</h3>
+      <div class="row">
+        <label>Vorgabe
+          <select id="pVinMode"><option value="range">Start/Stop/Schritt</option><option value="list">Liste</option></select>
+        </label>
+        <span class="mode-range" data-for="pVinMode">
+          <label>Start (V) <input id="pVinStart" type="number" step="0.1" value="9"></label>
+          <label>Stop (V) <input id="pVinStop" type="number" step="0.1" value="24"></label>
+          <label>Schritt (V) <input id="pVinStep" type="number" step="0.1" min="0.01" value="5"></label>
+        </span>
+        <span class="mode-list" data-for="pVinMode" hidden>
+          <label>Liste (V) <input id="pVinList" type="text" class="wide" placeholder="12; 24; 36"></label>
+        </span>
+      </div>
+
+      <h3>Ausgangsströme</h3>
+      <div class="row">
+        <label>Vorgabe
+          <select id="pIoutMode"><option value="range">Start/Stop/Schritt</option><option value="list">Liste</option></select>
+        </label>
+        <span class="mode-range" data-for="pIoutMode">
+          <label>Start (A) <input id="pIoutStart" type="number" step="0.01" value="0.1"></label>
+          <label>Stop (A) <input id="pIoutStop" type="number" step="0.01" value="2"></label>
+          <label>Schritt (A) <input id="pIoutStep" type="number" step="0.01" min="0.001" value="0.1"></label>
+        </span>
+        <span class="mode-list" data-for="pIoutMode" hidden>
+          <label>Liste (A) <input id="pIoutList" type="text" class="wide" placeholder="0,01; 0,05; 0,1; 0,5; 1; 2"></label>
+        </span>
+      </div>
+
+      <h3>Grenzen</h3>
+      <div class="row">
+        <label>Max. Eingangsstrom (A) <input id="pIinMax" type="number" step="0.1" min="0.01" value="3"></label>
+        <label>Vout-Toleranz (%) <input id="pVoutTol" type="number" step="1" min="1" max="90" value="10"></label>
+        <label>Grundlast bei Vout-Aufforderung (A) <input id="pBaseLoad" type="number" step="0.01" min="0" value="0"></label>
+      </div>
+
+      <h3>Einschwingen</h3>
+      <div class="row">
+        <label>Mindestwartezeit (s) <input id="pMinWait" type="number" step="0.5" min="0" value="2"></label>
+        <label>Zeitfenster (s) <input id="pWindow" type="number" step="0.5" min="0.5" value="3"></label>
+        <label>Schwelle (%) <input id="pRelTol" type="number" step="0.05" min="0.01" value="0.2"></label>
+        <label>oder absolut (mW) <input id="pAbsTol" type="number" step="1" min="0" value="2"></label>
+        <label>Timeout (s) <input id="pTimeout" type="number" step="1" min="1" value="30"></label>
+        <label>Wartezeit nach Vin-Wechsel (s) <input id="pVinSettle" type="number" step="0.5" min="0" value="1.5"></label>
+      </div>
+      <p class="muted small">
+        Ein Punkt gilt als eingeschwungen, wenn sich Pin und Pout nach der Mindestwartezeit über das Zeitfenster um
+        weniger als die Schwelle ändern. Gemessen wird der Mittelwert über das Fenster. Nach dem Timeout wird der Punkt
+        mit Hinweis übernommen. Bricht Vout ein oder geht die Quelle in die Strombegrenzung, werden die restlichen
+        Ströme dieser Kennlinie übersprungen.
+      </p>
+      <p id="planMsg" class="hint err" hidden></p>
+      <div class="row">
+        <button id="btnStart" class="primary" disabled>Messung starten</button>
+        <button id="btnAbort" disabled>Abbrechen</button>
+      </div>
+      <div class="stats">
+        <div><span class="label">Fortschritt</span><span id="sProg" class="stat">—</span></div>
+        <div><span class="label">Aktueller Punkt</span><span id="sPoint" class="stat">—</span></div>
+        <div><span class="label">Einschwingen</span><span id="sSettle" class="stat">—</span></div>
+        <div><span class="label">Restzeit ca.</span><span id="sEta" class="stat">—</span></div>
+      </div>
+    </section>
+
+    <!-- Ergebnis -->
+    <section class="card" id="resultCard">
+      <div class="card-head">
+        <h2>Ergebnis</h2>
+        <div class="row tight">
+          <label class="check"><input type="checkbox" id="effLog"> Strom logarithmisch</label>
+          <button id="btnPng" disabled>PNG</button>
+          <button id="btnResCsv" disabled>CSV</button>
+        </div>
+      </div>
+      <p id="resInfo" class="muted small">Noch keine Messung. Gespeicherte Ergebnisse lassen sich unter „Messdateien“ mit „Ergebnis“ öffnen.</p>
+      <canvas id="effPlot"></canvas>
+      <div id="effLegend" class="eff-legend"></div>
+      <p id="effHover" class="small eff-hover">&nbsp;</p>
+      <div class="table-wrap short">
+        <table class="grid-table" id="resTable">
+          <thead><tr>
+            <th>Vout nenn</th><th>Vin soll</th><th>Iout soll</th><th>Vin</th><th>Iin</th><th>Pin</th><th>Vout</th><th>Iout</th>
+            <th>Pout</th><th>η</th><th>Verlust</th><th>Zeit</th><th>Status</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Aufzeichnung -->
+    <section class="card logging">
+      <h2>Anzeige &amp; Aufzeichnung</h2>
+      <div class="row">
+        <label>Abfrageintervall ohne Messung
+          <select id="interval">
+            <option value="500">500 ms</option>
+            <option value="1000" selected>1 s</option>
+            <option value="2000">2 s</option>
+            <option value="5000">5 s</option>
+          </select>
+        </label>
+        <label>CSV-Format
+          <select id="csvFormat">
+            <option value="de">Excel deutsch (; und Komma)</option>
+            <option value="int">International (, und Punkt)</option>
+          </select>
+        </label>
+        <button id="btnClear">Verlauf löschen</button>
+      </div>
+    </section>
+
+    <section class="card" id="filesCard">
+      <div class="card-head">
+        <h2>Messdateien</h2>
+        <span id="filesInfo" class="muted small"></span>
+      </div>
+      <p class="muted small">
+        Jede Messung bekommt eine eigene Datei mit allen Abtastwerten, Parametern und Ablauf (Spalte „info“).
+        „Ergebnis“ lädt die Messpunkte in den Wirkungsgrad-Plot, „Ansehen“ öffnet den Verlauf mit Zoom und Messcursorn.
+        Die Dateien bleiben im Browser gespeichert.
+      </p>
+      <div class="row">
+        <button id="btnFilesDl" disabled>Ausgewählte herunterladen</button>
+        <button id="btnFilesAll" disabled>Alle als ZIP herunterladen</button>
+        <button id="btnFilesDel" disabled>Ausgewählte löschen</button>
+      </div>
+      <div class="table-wrap files">
+        <table id="filesTable" class="grid-table files-table">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="filesAllCb" aria-label="Alle auswählen"></th>
+              <th>Ablauf</th><th>Start</th><th>Dauer</th><th>Messwerte</th><th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p id="filesEmpty" class="muted small">Noch keine Messdateien.</p>
+    </section>
+
+    <section class="card" id="viewerCard" hidden></section>
+
+    <section class="card console">
+      <h2>Konsole</h2>
+      <form id="consoleForm" class="row">
+        <select id="cmdTarget" aria-label="Gerät">
+          <option value="source">Quelle</option>
+          <option value="sink">Senke</option>
+        </select>
+        <input id="cmd" type="text" placeholder="z. B. *IDN?" autocomplete="off">
+        <button id="btnSend">Senden</button>
+      </form>
+      <pre id="log"></pre>
+    </section>
+  </main>
+</body>
+</html>
