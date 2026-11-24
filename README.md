@@ -31,6 +31,11 @@ Hinweise zu den Geräten:
 
 ## Starten
 
+**Online:** <https://aprikosensalat.github.io/Effizienzmessung-Web/> in Chrome oder Edge öffnen
+(ohne Geräte zum Ausprobieren: Quelle und Senke „Simulator“). Die Messdateien bleiben lokal im Browser.
+
+**Lokal:**
+
 Nur in **Chrome / Edge** und in sicherem Kontext (`https://` oder `http://localhost`):
 
 ```sh
