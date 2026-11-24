@@ -26,7 +26,8 @@ Hinweise zu den Geräten:
   Remote Sense nur über die Sense-Klemmen am Gerät.
 - **IT8514C+**: USB ist ein Prolific-Seriell-Wandler (Treiber IT-E122), Baudrate am Gerät (Shift + 8)
   und auf der Website gleich einstellen; nicht DB9 und USB gleichzeitig anschließen.
-- **Android** (WebUSB): nur USB-CDC-Geräte (KORAD, NGP800). HMP (FTDI) und IT8514C+ (PL2303) am PC verwenden.
+- **Android** (WebUSB): USB-CDC (KORAD, NGP800 – geprüft mit KORAD), Prolific PL2303 (IT8514C+) und FTDI
+  (HMP mit HO720/HO730). PL2303 und FTDI sind nach den Linux-Treibern umgesetzt, aber nicht an Hardware geprüft.
 
 ## Starten
 

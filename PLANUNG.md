@@ -75,10 +75,9 @@ Basisklasse `RsScpiSource`):
   (HMP2020 Kanal 2: 5 A, NGP814 Kanal 3/4: 64 V / 10 A).
 - **Befehlspause je Gerät** (`DeviceInfo.gapMs`): HMP über RS-232 ohne Handshake laut Handbuch
   50–100 ms, Standard 100 ms; KORAD 50 ms.
-- **Android/WebUSB**: Nur CDC-Geräte funktionieren mit dem vorhandenen `usbserial.js` (KORAD, NGP800 mit
-  USB-Klasse CDC). Die IT8514C+ (Prolific PL2303) und das HMP (HO720/HO730, FTDI) brauchen einen eigenen
-  USB-Protokolltreiber – **am PC mit Web Serial gehen beide sofort**. FTDI-/PL2303-Unterstützung für
-  Android ist als spätere Erweiterung vorgesehen (`UsbSerialPort` bekommt dann je Chip eine Strategie).
+- **Android/WebUSB**: `UsbSerialPort` hat je Chip eine Strategie: CDC (KORAD, NGP800 mit USB-Klasse CDC),
+  Prolific PL2303 (IT8514C+) und FTDI (HMP mit HO720/HO730). PL2303 und FTDI sind nach den Linux-Treibern
+  (`pl2303.c`, `ftdi_sio.c`) umgesetzt und noch nicht an Hardware geprüft. Am PC gehen alle über Web Serial.
 - **Remote Sense**: KWR103, NGP800, KEL103, IT8514C+ per Befehl; beim HMP nur Hinweis
   „über die Sense-Klemmen am Gerät“ (`DeviceInfo.senseControl = false`). Die IT8514C+ meldet fehlende
   Sense-Leitungen (Bit 8) – das wird vor dem Start geprüft.
@@ -582,7 +581,7 @@ Effizienzmessung-Web/
 4. Ergebnisplot, PNG/CSV-Export, Messdateien, Betrachter.
 5. IT8514C+, HMP-Serie und NGP800 nach Handbuch umsetzen; Hardwaretest durch dich
    (diese Geräte sind nicht an meinem Rechner) – die Konsole hilft beim Prüfen einzelner Befehle.
-6. Später: FTDI- und PL2303-Unterstützung in `usbserial.js` für HMP und IT8514C+ unter Android.
+6. FTDI- und PL2303-Unterstützung in `usbserial.js` für HMP und IT8514C+ unter Android (umgesetzt, Hardwaretest offen).
 
 ## 11. Offene Punkte / zu prüfen
 

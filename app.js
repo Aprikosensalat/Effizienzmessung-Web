@@ -92,14 +92,14 @@ class DeviceSlot {
     this.f('baudWrap').hidden = info.sim || !info.baudRates.length;
 
     const tr = this.f('transport');
-    const usbOk = usbSupported() && info.usbCdc;
+    const usbOk = usbSupported() && info.webUsb;
     for (const o of tr.options) o.hidden = o.value === 'usb' ? !usbOk : !serialSupported();
     const savedTr = storageGet(`eff.${this.key}.transport`);
     tr.value = savedTr === 'usb' && usbOk ? 'usb' : savedTr === 'serial' && serialSupported() ? 'serial'
       : (ANDROID || !serialSupported()) && usbOk ? 'usb' : 'serial';
     this.f('transWrap').hidden = !!info.sim;
 
-    const note = [info.note, ANDROID && !info.usbCdc && !info.sim ? 'Unter Android derzeit nicht nutzbar (kein USB-CDC-Gerät) – am PC über „Seriell“ verbinden.' : '']
+    const note = [info.note, ANDROID && !info.webUsb && !info.sim ? 'Unter Android nicht nutzbar – am PC über „Seriell“ verbinden.' : '']
       .filter(Boolean).join(' ');
     this.f('note').textContent = note;
     this.f('note').hidden = !note;
