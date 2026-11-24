@@ -69,7 +69,9 @@ export class SimSource extends SimMixin.apply(Source) {
   async setCurrentLimit(i) { this._check(i, this.limits.iMax, 'Strom', 'A'); simDut.ilim = i; await tick(); }
   async setOutput(on) { simDut.srcOn = on; await tick(); }
   async measure() { await tick(); return simDut.read('src'); }
-  async status() { simDut.step(); return { cc: simDut.cc, fault: null }; }
+  async status() { simDut.step(); return { cc: simDut.cc, output: simDut.srcOn, fault: null }; }
+  async getVoltageSet() { return simDut.vset; }
+  async getCurrentSet() { return simDut.ilim; }
   async setSense(on) { simDut.srcSense = on; }
   async getSense() { return simDut.srcSense; }
 }
@@ -78,6 +80,8 @@ export class SimSink extends SimMixin.apply(Sink) {
   async setCC() {}
   async setCurrent(i) { this._check(i, this.limits.iMax, 'Strom', 'A'); simDut.iset = i; await tick(); }
   async setInput(on) { simDut.loadOn = on; await tick(); }
+  async getInput() { return simDut.loadOn; }
+  async getLevel() { return simDut.iset; }
   async measure() { await tick(); return simDut.read('sink'); }
   async setSense(on) { simDut.sinkSense = on; }
   async getSense() { return simDut.sinkSense; }

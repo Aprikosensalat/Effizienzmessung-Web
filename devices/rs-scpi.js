@@ -40,6 +40,10 @@ export class RsScpiSource extends Source {
     }
   }
 
+  getVoltageSet() { return this.link.queryNumber('VOLT?'); }
+  getCurrentSet() { return this.link.queryNumber('CURR?'); }
+  async getOutput() { return /^(1|ON)$/i.test((await this.link.query('OUTP?')).trim()); }
+
   async measure() {
     const v = await this.link.queryNumber('MEAS:VOLT?');
     const i = await this.link.queryNumber('MEAS:CURR?');

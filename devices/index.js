@@ -9,7 +9,7 @@
 //   usbCdc (über WebUSB unter Android nutzbar), accI: [relativ, absolut A] Genauigkeit der Strommessung,
 //   sim (Simulator ohne seriellen Port)
 
-import { KWR103Source, KEL103Sink } from './korad.js';
+import { KWR103Source, KA3005PSource, KEL103Sink } from './korad.js';
 import { NGP800Source, HmpSource } from './rs-scpi.js';
 import { ITechSink } from './itech.js';
 import { SimSource, SimSink } from './sim.js';
@@ -51,6 +51,13 @@ registry.register({
   channels: ch(1, 60, 15), pMax: 300, baudRates: KORAD_BAUD, defaultBaud: 115200, gapMs: 50,
   senseControl: true, usbCdc: true, accI: [0.001, 0.003],
 }, (info, o) => new KWR103Source(info, o));
+
+registry.register({
+  id: 'ka3005p', name: 'KORAD KA3005P', kind: 'source', idnMatch: /KA3005P/,
+  channels: ch(1, 30, 5), pMax: 150, baudRates: [9600], defaultBaud: 9600, gapMs: 50,
+  senseControl: false, senseHint: 'Das KA3005P hat keinen Remote-Sense-Eingang.',
+  usbCdc: true, accI: [0.002, 0.01], // Messgenauigkeit Datenblatt-Näherung, Auflösung 1 mA / 10 mV
+}, (info, o) => new KA3005PSource(info, o));
 
 const ngp = (id, name, channels, pMax) => registry.register({
   id, name, kind: 'source', idnMatch: new RegExp(name.split(' ').pop()),

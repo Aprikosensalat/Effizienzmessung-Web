@@ -13,6 +13,7 @@ Planung mit Klassen-, Sequenz- und Zustandsdiagramm: [PLANUNG.md](PLANUNG.md)
 | Quelle | Senke |
 |---|---|
 | KORAD KWR103 *(am Gerät geprüft)* | KORAD KEL103 *(am Gerät geprüft)* |
+| KORAD KA3005P *(am Gerät geprüft, 9600 Baud, kein Remote Sense)* | |
 | R&S NGP802 / 822 / 804 / 814 / 824 *(nach Handbuch)* | ITECH IT8514C+ *(nach Handbuch)* |
 | R&S HMP2020 / 2030 / 4030 / 4040 *(nach Handbuch)* | Simulator |
 | Simulator | |

@@ -49,6 +49,7 @@ WebUSB-CDC (Android), Messdateien in IndexedDB, CSV/ZIP-Export.
 | Gerät | Rolle | Grenzen | Schnittstelle | Sense | CC/Schutz erkennen |
 |---|---|---|---|---|---|
 | **KORAD KWR103** | Quelle | 60 V / 15 A / 300 W | USB-CDC (0416:5011), 115200 | `COMP:1/0` | `STATUS?` (rohes Byte, Bit 0 = CV) |
+| **KORAD KA3005P** | Quelle | 30 V / 5 A / 150 W | USB-CDC (0416:5011), 9600 | keiner | `STATUS?` (rohes Byte, Bit 0 = CV, Bit 6 = Ausgang); `VSET1:`/`ISET1:`/`OUT1`/`OUT0` |
 | **R&S NGP802 / 804** | Quelle | 32 V / 20 A je Kanal, 400 / 800 W | USB **CDC** (am Gerät „USB Class = CDC“, Neustart) oder RS-232 | `VOLT:SENS AUTO` / `EXT` je Kanal | `STAT:QUES:INST:ISUM<n>:COND?` Bit 0 CC, Bit 1 CV |
 | **R&S NGP822 / 824** | Quelle | 64 V / 10 A je Kanal, 400 / 800 W | wie oben | wie oben | wie oben |
 | **R&S NGP814** | Quelle | Kanal 1/2: 32 V / 20 A, Kanal 3/4: 64 V / 10 A, 800 W | wie oben | wie oben | wie oben |

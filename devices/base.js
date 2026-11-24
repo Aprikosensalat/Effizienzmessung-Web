@@ -91,8 +91,9 @@ export class Source extends Instrument {
   async setOutput(_on) { throw new Error('nicht implementiert'); }
   /** @returns {Promise<{ v: number, i: number }>} */
   async measure() { throw new Error('nicht implementiert'); }
-  /** @returns {Promise<{ cc: boolean|null, fault: string|null }>} */
+  /** @returns {Promise<{ cc: boolean|null, output?: boolean, fault: string|null }>} */
   async status() { return { cc: null, fault: null }; }
+  // Optional (für die Steuerungsseiten): getVoltageSet(), getCurrentSet(), getOutput()
   /** Sicher abschalten. */
   safeOff() { return this.setOutput(false); }
 }
@@ -109,5 +110,8 @@ export class Sink extends Instrument {
   async status() { return { fault: null }; }
   /** Vor dem Messlauf: z. B. passenden Strombereich nach dem größten Strom wählen. */
   async prepare(_iMax) {}
+  /** Unterstützte Betriebsarten; Geräte mit mehr als CC überschreiben modes, setMode, getMode, setLevel, getLevel. */
+  get modes() { return ['CC']; }
+  // Optional: getInput()
   safeOff() { return this.setInput(false); }
 }

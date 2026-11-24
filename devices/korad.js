@@ -30,6 +30,9 @@ export class KWR103Source extends Source {
     return { cc: (s & 0x01) === 0 && (s & 0x02) !== 0, output: (s & 0x02) !== 0, fault: null };
   }
 
+  getVoltageSet() { return this.link.queryNumber('VSET?'); }
+  getCurrentSet() { return this.link.queryNumber('ISET?'); }
+
   setSense(on) {
     return this.link.write(`COMP:${on ? 1 : 0}`);
   }
@@ -67,4 +70,41 @@ export class KEL103Sink extends Sink {
   async getSense() {
     return (await this.link.query(':SYST:COMP?')).toUpperCase() === 'ON';
   }
+}
+
+/**
+ * KORAD KA3005P (30 V / 5 A), am Gerät geprüft (Firmware V5.8, 9600 Baud):
+ *   VSET1:1.00 / VSET1? -> "01.00" · ISET1:0.050 / ISET1? -> "0.050" · OUT1 / OUT0 (ohne Doppelpunkt)
+ *   VOUT1? / IOUT1? · STATUS? -> rohes Byte: Bit 0 = CV (1) / CC (0), Bit 6 = Ausgang ein
+ *   Antworten enden nur dann mit "\n", wenn der Befehl mit "\n" gesendet wurde. Kein Remote Sense.
+ */
+export class KA3005PSource extends Source {
+  setVoltage(v) {
+    this._check(v, this.limits.vMax, 'Spannung', 'V');
+    return this.link.write(`VSET1:${v.toFixed(2)}`);
+  }
+
+  setCurrentLimit(i) {
+    this._check(i, this.limits.iMax, 'Strom', 'A');
+    return this.link.write(`ISET1:${i.toFixed(3)}`);
+  }
+
+  setOutput(on) {
+    return this.link.write(on ? 'OUT1' : 'OUT0');
+  }
+
+  async measure() {
+    const v = await this.link.queryNumber('VOUT1?');
+    const i = await this.link.queryNumber('IOUT1?');
+    return { v, i };
+  }
+
+  async status() {
+    const s = await this.link.query('STATUS?', { binary: true });
+    const output = (s & 0x40) !== 0;
+    return { cc: output && (s & 0x01) === 0, output, fault: null };
+  }
+
+  getVoltageSet() { return this.link.queryNumber('VSET1?'); }
+  getCurrentSet() { return this.link.queryNumber('ISET1?'); }
 }
