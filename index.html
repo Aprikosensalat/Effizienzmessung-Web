@@ -142,12 +142,44 @@
         <h2>Messplan</h2>
         <span id="planInfo" class="muted small"></span>
       </div>
+      <h3>Wandler</h3>
       <div class="row">
-        <label>Wandler / Bezeichnung <input id="pDut" type="text" class="wide" placeholder="z. B. LM2596 Modul"></label>
-        <label>Ausgangsspannungen (V)
-          <input id="pVouts" type="text" class="wide" placeholder="leer = keine Aufforderung, z. B. 3,3; 5; 12">
+        <label>Bezeichnung <input id="pDut" type="text" class="wide" placeholder="z. B. LM2596 Modul"></label>
+        <label>Typ
+          <select id="pTopo">
+            <option value="buck">Buck (abwärts, Vin &gt; Vout)</option>
+            <option value="boost">Boost (aufwärts, Vin &lt; Vout)</option>
+            <option value="buckboost">Buck/Boost (beides)</option>
+          </select>
         </label>
+        <label id="pDeltaWrap">Mindestabstand Vin ↔ Vout (V) <input id="pDelta" type="number" step="0.1" min="0" value="1"></label>
       </div>
+
+      <h3>Ausgangsspannungen (stellst du am Wandler ein)</h3>
+      <div class="row">
+        <label>Vorgabe
+          <select id="pVoutMode">
+            <option value="none">keine (ohne Aufforderung)</option>
+            <option value="range">Start/Stop/Schritt</option>
+            <option value="list">Liste</option>
+          </select>
+        </label>
+        <span class="mode-range" data-for="pVoutMode" hidden>
+          <label>Start (V) <input id="pVoutStart" type="number" step="0.1" value="3.3"></label>
+          <label>Stop (V) <input id="pVoutStop" type="number" step="0.1" value="12"></label>
+          <label>Schritt (V) <input id="pVoutStep" type="number" step="0.1" min="0.01" value="1"></label>
+        </span>
+        <span class="mode-list" data-for="pVoutMode" hidden>
+          <label>Liste (V) <input id="pVouts" type="text" class="wide" placeholder="z. B. 3,3; 5; 12"></label>
+        </span>
+      </div>
+      <p class="muted small">
+        Vor den Kennlinien jeder Ausgangsspannung fordert dich die Seite auf, den Wandler (z. B. am Poti) auf diese
+        Spannung einzustellen, und zeigt Vout dabei live an. Eingangsspannungen, die für den Wandlertyp nicht passen
+        (Buck: Vin ≥ Vout + Abstand, Boost: Vin ≤ Vout − Abstand), werden für diese Ausgangsspannung ausgelassen.
+        Mit „keine“ wird nicht gefragt; der Abstand wird dann gegen die gemessene Ausgangsspannung geprüft.
+      </p>
+      <p id="planSkip" class="muted small" hidden></p>
 
       <h3>Eingangsspannungen</h3>
       <div class="row">

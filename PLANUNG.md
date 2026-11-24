@@ -23,6 +23,7 @@ WebUSB-CDC (Android), Messdateien in IndexedDB, CSV/ZIP-Export.
 | A12 | Ergebnisplot **η über Iout**, eine Kurve je Vin/Vout-Kombination; Export als **PNG** und Ergebnistabelle als **CSV** |
 | A13 | Web-App, **privates GitHub-Repo** ohne Pages |
 | A14 | Handbücher (PDF) bleiben per `.gitignore` außerhalb des Repos |
+| A15 | **Wandlertyp** Buck / Boost / Buck-Boost mit **Mindestabstand** Vin ↔ Vout; unpassende Vin-Werte werden je Vout ausgelassen (ohne Vout-Vorgabe: Prüfung gegen gemessene Leerlauf-Vout) |
 
 ## 2. Messprinzip
 

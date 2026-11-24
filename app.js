@@ -318,13 +318,14 @@ $('btnAllOff').addEventListener('click', () => guarded(async () => {
 }));
 
 // ---------- Messplan ----------
-const PLAN_FIELDS = ['pDut', 'pVouts', 'pVinMode', 'pVinStart', 'pVinStop', 'pVinStep', 'pVinList', 'pIoutMode', 'pIoutStart',
+const PLAN_FIELDS = ['pDut', 'pTopo', 'pDelta', 'pVoutMode', 'pVoutStart', 'pVoutStop', 'pVoutStep', 'pVouts', 'pVinMode', 'pVinStart', 'pVinStop', 'pVinStep', 'pVinList', 'pIoutMode', 'pIoutStart',
   'pIoutStop', 'pIoutStep', 'pIoutList', 'pIinMax', 'pVoutTol', 'pBaseLoad', 'pMinWait', 'pWindow', 'pRelTol', 'pAbsTol',
   'pTimeout', 'pVinSettle'];
 
 function readForm() {
   return {
     dutName: $('pDut').value, voutList: $('pVouts').value,
+    voutMode: $('pVoutMode').value, voutStart: num('pVoutStart'), voutStop: num('pVoutStop'), voutStep: num('pVoutStep'), topology: $('pTopo').value, minDelta: num('pDelta'),
     vinMode: $('pVinMode').value, vinStart: num('pVinStart'), vinStop: num('pVinStop'), vinStep: num('pVinStep'), vinList: $('pVinList').value,
     ioutMode: $('pIoutMode').value, ioutStart: num('pIoutStart'), ioutStop: num('pIoutStop'), ioutStep: num('pIoutStep'), ioutList: $('pIoutList').value,
     iinMax: num('pIinMax'), voutTolPct: num('pVoutTol'), baseLoad: num('pBaseLoad') || 0,
@@ -340,25 +341,33 @@ function fmtDur(ms) {
 }
 
 function planChanged() {
-  for (const sel of ['pVinMode', 'pIoutMode']) {
-    const list = $(sel).value === 'list';
-    document.querySelector(`.mode-range[data-for="${sel}"]`).hidden = list;
-    document.querySelector(`.mode-list[data-for="${sel}"]`).hidden = !list;
+  for (const sel of ['pVinMode', 'pIoutMode', 'pVoutMode']) {
+    const mode = $(sel).value;
+    document.querySelector(`.mode-range[data-for="${sel}"]`).hidden = mode !== 'range';
+    document.querySelector(`.mode-list[data-for="${sel}"]`).hidden = mode !== 'list';
   }
   storageSet('eff.plan', Object.fromEntries(PLAN_FIELDS.map((id) => [id, $(id).value])));
   try {
     const p = SweepPlan.fromForm(readForm());
-    $('planInfo').textContent = `${p.pointCount()} Punkte in ${p.curveCount} Kennlinie${p.curveCount === 1 ? '' : 'n'} · Dauer ca. ${fmtDur(p.estimateDuration())}` +
-      (p.vouts.length ? ` + ${p.vouts.length} × Vout einstellen` : '');
+    $('planInfo').textContent = `${p.pointCount()} Punkt${p.pointCount() === 1 ? '' : 'e'} in ${p.curveCount} Kennlinie${p.curveCount === 1 ? '' : 'n'} · Dauer ca. ${fmtDur(p.estimateDuration())}` +
+      (p.vouts.length ? ` + ${p.vouts.filter((v) => p.vinsFor(v).length).length} × Vout einstellen` : '');
     $('planMsg').hidden = true;
+    const ex = p.excluded();
+    $('planSkip').textContent = ex.length
+      ? 'Ausgelassen (Wandlertyp): ' + ex.map((x) => `Vout ${fmt(x.voutNom, 2)} V – Vin ${x.vins.map((v) => fmt(v, 2)).join(' / ')} V`).join(' · ')
+      : '';
+    $('planSkip').hidden = !ex.length;
   } catch (e) {
     $('planInfo').textContent = e.message;
+    $('planSkip').hidden = true;
   }
+  $('pDeltaWrap').hidden = $('pTopo').value === 'buckboost';
 }
 {
   const saved = storageGet('eff.plan') ?? {};
+  if (saved.pVoutMode === undefined && saved.pVouts?.trim()) saved.pVoutMode = 'list'; // Pläne vor dem Vout-Modus
   for (const id of PLAN_FIELDS) if (saved[id] !== undefined) $(id).value = saved[id];
-  for (const id of PLAN_FIELDS) $(id).addEventListener('input', planChanged);
+  for (const id of PLAN_FIELDS) { $(id).addEventListener('input', planChanged); $(id).addEventListener('change', planChanged); }
   planChanged();
 }
 

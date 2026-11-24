@@ -47,6 +47,32 @@ export class SweepPlan {
     this.baseLoad = p.baseLoad ?? 0;     // Grundlast während der Vout-Aufforderung
     this.vinSettleMs = p.vinSettleMs ?? 1500;
     this.settle = { ...DEFAULT_SETTLE, ...(p.settle ?? {}) };
+    this.topology = p.topology ?? 'buckboost'; // 'buck' | 'boost' | 'buckboost'
+    this.minDelta = p.minDelta ?? 0;           // Mindestabstand zwischen Vin und Vout (V)
+  }
+
+  /** Passt die Kombination zum Wandlertyp? Buck: Vin ≥ Vout + Abstand, Boost: Vin ≤ Vout − Abstand. */
+  allowed(vin, vout) {
+    if (vout == null || !Number.isFinite(vout)) return true;
+    if (this.topology === 'buck') return vin >= vout + this.minDelta - 1e-9;
+    if (this.topology === 'boost') return vin <= vout - this.minDelta + 1e-9;
+    return true;
+  }
+
+  /** Eingangsspannungen, die zu einer Ausgangsspannung passen (Reihenfolge wie im Plan). */
+  vinsFor(voutNom) {
+    return this.vins.filter((vin) => this.allowed(vin, voutNom));
+  }
+
+  /** Ausgelassene Kombinationen: [{ voutNom, vins: [...] }] */
+  excluded() {
+    return this.vouts
+      .map((voutNom) => ({ voutNom, vins: this.vins.filter((vin) => !this.allowed(vin, voutNom)) }))
+      .filter((x) => x.vins.length);
+  }
+
+  get topologyText() {
+    return { buck: 'Buck', boost: 'Boost', buckboost: 'Buck/Boost' }[this.topology] ?? this.topology;
   }
 
   /** Aus den Formularwerten; wirft bei ungültigen Eingaben. */
@@ -60,11 +86,16 @@ export class SweepPlan {
     const vins = list(f.vinMode, f.vinStart, f.vinStop, f.vinStep, f.vinList, 'Eingangsspannungen');
     const iouts = list(f.ioutMode, f.ioutStart, f.ioutStop, f.ioutStep, f.ioutList, 'Ausgangsströme');
     if (vins.some((v) => v <= 0)) throw new Error('Eingangsspannungen müssen größer als 0 sein.');
-    const vouts = ValueList.parse(f.voutList);
+    // Ausgangsspannungen: keine (ohne Aufforderung), Start/Stop/Schritt oder Liste; alte Pläne ohne Modus = Liste
+    const voutMode = f.voutMode ?? 'list';
+    const vouts = voutMode === 'none' ? []
+      : list(voutMode, f.voutStart, f.voutStop, f.voutStep, f.voutList, 'Ausgangsspannungen');
+    if (vouts.some((v) => v <= 0)) throw new Error('Ausgangsspannungen müssen größer als 0 sein.');
     if (!(f.iinMax > 0)) throw new Error('Max. Eingangsstrom muss größer als 0 sein.');
     return new SweepPlan({
       dutName: f.dutName.trim(), vouts, vins, iouts, iinMax: f.iinMax,
       voutTol: f.voutTolPct / 100, baseLoad: f.baseLoad, vinSettleMs: f.vinSettleS * 1000,
+      topology: f.topology, minDelta: f.topology === 'buckboost' ? 0 : Math.max(0, f.minDelta || 0),
       settle: {
         minWaitMs: f.minWaitS * 1000, windowMs: f.windowS * 1000, relTol: f.relTolPct / 100,
         absTolW: f.absTolMw / 1000, timeoutMs: f.timeoutS * 1000,
@@ -73,7 +104,7 @@ export class SweepPlan {
   }
 
   get curveCount() {
-    return Math.max(1, this.vouts.length) * this.vins.length;
+    return this.vouts.length ? this.vouts.reduce((n, v) => n + this.vinsFor(v).length, 0) : this.vins.length;
   }
 
   pointCount() {
@@ -90,6 +121,7 @@ export class SweepPlan {
   check(srcLimits, sinkLimits) {
     const err = [];
     const vinMax = Math.max(...this.vins), ioutMax = Math.max(...this.iouts);
+    if (this.curveCount === 0) err.push(`Keine Eingangsspannung passt zu den Ausgangsspannungen (${this.topologyText}, Abstand ${this.minDelta} V).`);
     if (vinMax > srcLimits.vMax) err.push(`Eingangsspannung ${vinMax} V über dem Maximum der Quelle (${srcLimits.vMax} V).`);
     if (this.iinMax > srcLimits.iMax) err.push(`Max. Eingangsstrom ${this.iinMax} A über dem Maximum der Quelle (${srcLimits.iMax} A).`);
     if (ioutMax > sinkLimits.iMax) err.push(`Ausgangsstrom ${ioutMax} A über dem Maximum der Last (${sinkLimits.iMax} A).`);
@@ -104,6 +136,7 @@ export class SweepPlan {
   toParams() {
     const s = this.settle;
     return {
+      Wandlertyp: this.topology === 'buckboost' ? this.topologyText : `${this.topologyText}, Mindestabstand ${this.minDelta} V`,
       Ausgangsspannungen_V: this.vouts.length ? this.vouts.join(' / ') : 'keine Vorgabe',
       Eingangsspannungen_V: this.vins.join(' / '),
       Ausgangsstroeme_A: this.iouts.join(' / '),

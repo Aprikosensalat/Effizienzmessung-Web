@@ -98,21 +98,26 @@ export class SweepRunner {
       const vouts = plan.vouts.length ? plan.vouts : [null];
       for (const voutNom of vouts) {
         this._check();
+        const vins = voutNom === null ? plan.vins : plan.vinsFor(voutNom);
+        if (!vins.length) {
+          this._event(`Vout ${de(voutNom)} V übersprungen – keine passende Eingangsspannung`);
+          continue;
+        }
         await sink.setInput(false);
-        await src.setVoltage(plan.vins[0]);
+        await src.setVoltage(vins[0]);
         await src.setOutput(true);
 
         if (voutNom !== null) {
           // Nutzer stellt die Ausgangsspannung am Wandler ein
           if (plan.baseLoad > 0) { await sink.setCurrent(plan.baseLoad); await sink.setInput(true); }
           this.recorder?.setPhase(`Aufforderung: Vout auf ${de(voutNom)} V einstellen`);
-          progress({ phase: 'Aufforderung', voutNom, vin: plan.vins[0] });
-          await this._prompt({ voutNom, vin: plan.vins[0] });
+          progress({ phase: 'Aufforderung', voutNom, vin: vins[0] });
+          await this._prompt({ voutNom, vin: vins[0] });
           this._event(`Nutzer: Vout ${de(voutNom)} V bestätigt`);
           await sink.setInput(false);
         }
 
-        for (const vin of plan.vins) {
+        for (const vin of vins) {
           await this._curve(plan, voutNom, vin, results, (n) => { done += n; }, progress);
         }
       }
@@ -155,6 +160,18 @@ export class SweepRunner {
     this.recorder?.setPhase(`Vin ${de(vin)} V einstellen`);
     progress({ phase: 'Vin einstellen', voutNom, vin });
     await this._sampleFor(plan.vinSettleMs, base);
+
+    // Ohne Vout-Vorgabe: Abstand gegen die gemessene Leerlauf-Ausgangsspannung prüfen
+    if (voutNom == null && plan.topology !== 'buckboost') {
+      const s = await this.sample(base);
+      if (s.vout > 0.1 && !plan.allowed(vin, s.vout)) {
+        const note = `Vin ${de(vin)} V passt nicht zu Vout ${de(s.vout.toFixed(2))} V (${plan.topologyText}, Abstand ${de(plan.minDelta)} V)`;
+        this._event(`Kennlinie übersprungen: ${note}`);
+        for (const iout of plan.iouts) results.add({ ...base, ioutSet: iout, flag: 'skipped', note, eta: NaN });
+        addDone(plan.iouts.length);
+        return;
+      }
+    }
 
     await sink.setCurrent(plan.iouts[0]);
     await sink.setInput(true);

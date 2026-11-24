@@ -40,8 +40,12 @@ Dann <http://localhost:8002> öffnen, Quelle und Senke wählen und jeweils **Ver
 
 ## Ablauf einer Messung
 
-1. **Messplan**: Ausgangsspannungen (optional), Eingangsspannungen und Ausgangsströme als
+1. **Messplan**: Wandlertyp (Buck, Boost, Buck/Boost) mit Mindestabstand zwischen Vin und Vout,
+   Ausgangsspannungen (keine, Start/Stop/Schritt oder Liste – stellst du am Wandler ein), Eingangsspannungen und Ausgangsströme als
    Start/Stop/Schritt oder Liste (`0,1; 0,5; 1; 2`), max. Eingangsstrom, Vout-Toleranz, Einschwing-Parameter.
+   Eingangsspannungen, die nicht zum Wandlertyp passen (Buck: Vin ≥ Vout + Abstand, Boost: Vin ≤ Vout − Abstand),
+   werden für die jeweilige Ausgangsspannung ausgelassen. Ohne Liste der Ausgangsspannungen wird vor jeder
+   Kennlinie die gemessene Leerlauf-Ausgangsspannung geprüft.
 2. **Je Ausgangsspannung**: Die Quelle schaltet mit der ersten Eingangsspannung ein, die Website fordert auf,
    den Wandler auf die Spannung einzustellen (Live-Anzeige von Vout), dann **Übernehmen**.
 3. **Je Eingangsspannung**: Last aus, Vin einstellen, kurz warten, dann die Ströme **aufsteigend** anfahren.
