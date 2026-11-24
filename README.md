@@ -63,7 +63,8 @@ Punkte mit kleinem Eingangsstrom werden als „ungenau“ markiert, wenn der Str
 ## Ergebnis und Dateien
 
 - **Wirkungsgrad-Plot**: η über Iout, Farbe je Vin, Strichart je Vout; Strom linear oder logarithmisch;
-  Kurven per Legende ein-/ausblenden; Export als **PNG** (mit Titel und Legende) und **CSV** (ein Punkt je Zeile).
+  Kurven per Legende ein-/ausblenden; Export als **PNG** und **SVG** (Vektorgrafik, beide mit Titel und Legende)
+  und **CSV** (ein Punkt je Zeile).
 - **Messdateien**: jede Messung als eigene Datei mit allen Abtastwerten (`vout_V`, `iout_A`, `pout_W`, `vin_V`,
   `iin_A`, `pin_W`, `eta_pct`, Sollwerte, Spalte `info` mit Phase und Ereignissen). „Ergebnis“ lädt die Messpunkte
   einer gespeicherten Messung in den Plot, „Ansehen“ öffnet den Verlauf mit Zoom und Cursorn, ZIP-Download.

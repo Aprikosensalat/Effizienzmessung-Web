@@ -1,6 +1,7 @@
-// Wirkungsgrad über Ausgangsstrom, eine Kurve je Vout/Vin-Kombination. PNG-Export mit Legende.
+// Wirkungsgrad über Ausgangsstrom, eine Kurve je Vout/Vin-Kombination. PNG- und SVG-Export mit Legende.
 
 import { niceStep, decimals, prepareCanvas } from './plot.js';
+import { SvgContext } from './svgctx.js';
 
 const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const PALETTE = ['--c-volt', '--c-curr', '--c-pow', '--c-ext1', '--c-ext2', '--c-ext3', '--c-ext4', '--cur-a', '--cur-b'];
@@ -30,7 +31,7 @@ export class EfficiencyPlot {
 
   /** results: ResultSet; Farben werden je Vin, Strichart je Vout vergeben. */
   setResults(results) {
-    this.title = results ? [results.meta.dut, results.meta.name].filter(Boolean).join(' – ') : '';
+    this.title = results ? results.meta.dut || results.meta.name || '' : '';
     const curves = results ? results.curves() : [];
     const vins = [...new Set(curves.map((c) => c.vin))];
     const vouts = [...new Set(curves.map((c) => c.voutNom))];
@@ -184,6 +185,13 @@ export class EfficiencyPlot {
         ctx.fillText(c.label, x + 32, y + 6);
       });
     }
+  }
+
+  /** SVG (Vektorgrafik) mit Titel und Legende – gleicher Zeichencode wie PNG. */
+  toSvg(width = 1400, height = 850) {
+    const ctx = new SvgContext(width, height);
+    this._render(ctx, width, height, { legend: true, title: true, bg: cssVar('--card') });
+    return new Blob([ctx.toString()], { type: 'image/svg+xml' });
   }
 
   /** PNG mit Titel und Legende. */

@@ -509,6 +509,7 @@ function renderResults() {
   }
   const n = res?.points.length ?? 0;
   $('btnPng').disabled = !n;
+  $('btnSvg').disabled = !n;
   $('btnResCsv').disabled = !n;
   if (res) {
     const ok = res.points.filter((p) => p.flag === 'ok' || p.flag === 'timeout').length;
@@ -529,6 +530,10 @@ function showStoredResult(meta) {
 $('btnPng').addEventListener('click', async () => {
   if (!current) return;
   downloadBlob(await effPlot.toPng(), fileName(current.meta).replace(/\.csv$/, '_wirkungsgrad.png'));
+});
+$('btnSvg').addEventListener('click', () => {
+  if (!current) return;
+  downloadBlob(effPlot.toSvg(), fileName(current.meta).replace(/\.csv$/, '_wirkungsgrad.svg'));
 });
 $('btnResCsv').addEventListener('click', () => {
   if (!current) return;
